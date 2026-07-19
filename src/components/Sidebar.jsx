@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
-const Sidebar = ({ conversations = [], activeId, onSelect, onNew, onDelete }) => {
+const Sidebar = ({ conversations = [], activeId, onSelect, onNew, onDelete, isOpen, onClose }) => {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
@@ -10,46 +10,78 @@ const Sidebar = ({ conversations = [], activeId, onSelect, onNew, onDelete }) =>
     navigate('/')
   }
 
-  return (
-    <aside className="w-64 h-screen bg-gray-900 border-r border-white/10 flex flex-col">
+  const initial = user?.name?.charAt(0).toUpperCase() || '?'
 
-      <div className="p-4 border-b border-white/10">
-        <Link to="/" className="text-cyan-400 font-bold text-lg">Racine</Link>
+  return (
+    <aside className={`sidebar${isOpen ? ' sidebar-open' : ''}`}>
+      {/* Header */}
+      <div className="sidebar-header">
+        <Link to="/" className="sidebar-brand">🌾 Racine</Link>
+        {/* Close button on mobile */}
+        {isOpen && (
+          <button
+            onClick={onClose}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--clr-muted)',
+              cursor: 'pointer',
+              fontSize: '1.25rem',
+              padding: '0.25rem',
+              display: 'none',
+            }}
+            className="sidebar-close-btn"
+          >
+            ✕
+          </button>
+        )}
       </div>
 
-      <div className="p-4">
+      {/* New conversation button */}
+      <div style={{ padding: '0.75rem 0.75rem 0.5rem' }}>
         <button
-          onClick={onNew}
-          className="w-full bg-cyan-400 text-gray-950 rounded-full py-2 text-sm font-medium hover:bg-cyan-300 transition"
+          className="sidebar-new-btn"
+          onClick={() => {
+            onNew?.()
+            onClose?.()
+          }}
         >
-          + Nouvelle conversation
+          <span style={{ fontSize: '1rem' }}>＋</span>
+          Nouvelle conversation
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-2">
-        <p className="text-gray-500 text-xs uppercase tracking-widest px-2 mb-2">Historique</p>
+      {/* Conversation list */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0.25rem 0' }}>
+        <p className="sidebar-section-label">Historique</p>
+
         {conversations.length === 0 && (
-          <p className="text-gray-600 text-xs px-3">Aucune conversation pour le moment.</p>
+          <p style={{ fontSize: '0.8rem', color: 'var(--clr-muted)', padding: '0.5rem 1rem', opacity: 0.7 }}>
+            Aucune conversation.
+          </p>
         )}
+
         {conversations.map((conv) => (
           <div
             key={conv.id}
-            onClick={() => onSelect?.(conv.id)}
-            className={`group flex items-center justify-between px-3 py-3 rounded-xl cursor-pointer transition ${
-              conv.id === activeId ? 'bg-white/10' : 'hover:bg-white/5'
-            }`}
+            className={`conv-item${conv.id === activeId ? ' active' : ''}`}
+            onClick={() => {
+              onSelect?.(conv.id)
+              onClose?.()
+            }}
           >
-            <div className="flex flex-col min-w-0">
-              <span className="text-white text-sm truncate">{conv.title}</span>
-              <span className="text-gray-500 text-xs mt-1">{conv.date}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="conv-title">{conv.title}</div>
+              <div className="conv-date">{conv.date}</div>
             </div>
             {onDelete && (
               <button
+                className="conv-delete"
                 onClick={(e) => {
                   e.stopPropagation()
                   onDelete(conv.id)
                 }}
-                className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 text-xs transition shrink-0 ml-2"
+                title="Supprimer"
               >
                 ✕
               </button>
@@ -58,32 +90,24 @@ const Sidebar = ({ conversations = [], activeId, onSelect, onNew, onDelete }) =>
         ))}
       </div>
 
-      <div className="p-4 border-t border-white/10 flex flex-col gap-2">
+      {/* Footer user */}
+      <div className="sidebar-footer">
         {user ? (
           <>
-            <Link
-              to="/profile"
-              className="text-sm text-gray-300 hover:text-cyan-400 transition truncate"
-            >
-              {user.name}
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="w-full text-sm text-gray-400 hover:text-cyan-400 transition text-left"
-            >
-              Se déconnecter
+            <div className="sidebar-user">
+              <div className="sidebar-user-avatar">{initial}</div>
+              <Link to="/profile" className="sidebar-user-name">{user.name}</Link>
+            </div>
+            <button className="sidebar-logout-btn" onClick={handleLogout}>
+              <span>↩</span> Se déconnecter
             </button>
           </>
         ) : (
-          <Link
-            to="/login"
-            className="w-full text-sm text-gray-400 hover:text-cyan-400 transition text-left"
-          >
-            Se connecter
+          <Link to="/login" className="sidebar-login-link">
+            <span>→</span> Se connecter
           </Link>
         )}
       </div>
-
     </aside>
   )
 }

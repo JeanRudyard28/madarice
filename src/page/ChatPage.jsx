@@ -17,6 +17,7 @@ const ChatPage = () => {
   const [activeId, setActiveId] = useState(null)
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   // Charge l'historique au montage (ou crée une première conversation)
   useEffect(() => {
@@ -36,6 +37,7 @@ const ChatPage = () => {
   const handleSelectConversation = (id) => {
     setActiveId(id)
     setErrorMsg('')
+    setSidebarOpen(false)
   }
 
   const handleDeleteConversation = (id) => {
@@ -73,29 +75,57 @@ const ChatPage = () => {
       })
       setConversations(getConversations())
     } catch (err) {
-      setErrorMsg("Impossible de contacter Felana pour le moment. Vérifiez la connexion au workflow n8n.")
+      setErrorMsg("Impossible de contacter Racine pour le moment. Vérifiez la connexion au workflow n8n.")
     } finally {
       setLoading(false)
     }
   }
 
+  const activeTitle = activeConversation?.title || 'Nouvelle conversation'
+
   return (
-    <div className="flex h-screen bg-gray-950">
+    <div className="chat-page">
+      {/* Overlay mobile sidebar */}
+      {sidebarOpen && (
+        <div
+          className="sidebar-overlay visible"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       <Sidebar
         conversations={conversations}
         activeId={activeId}
         onSelect={handleSelectConversation}
         onNew={handleNewConversation}
         onDelete={handleDeleteConversation}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
-      <div className="flex-1 flex flex-col">
+
+      <div className="chat-area">
+        {/* Mobile topbar */}
+        <div className="chat-topbar">
+          <button
+            className="menu-toggle"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            aria-label="Menu"
+          >
+            ☰
+          </button>
+          <span className="chat-topbar-title">🌾 Racine</span>
+          <div style={{ width: 40 }} />
+        </div>
+
         <ChatWindow
           messages={activeConversation?.messages || []}
           loading={loading}
         />
+
         {errorMsg && (
-          <p className="text-red-400 text-xs text-center px-6 pb-2">{errorMsg}</p>
+          <p className="chat-error">{errorMsg}</p>
         )}
+
         <ChatInput onSend={handleSend} disabled={loading} />
       </div>
     </div>

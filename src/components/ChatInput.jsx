@@ -1,35 +1,67 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 
 const ChatInput = ({ onSend, disabled }) => {
   const [value, setValue] = useState('')
+  const textareaRef = useRef(null)
 
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!value.trim() || disabled) return
     onSend(value)
     setValue('')
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+    }
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSubmit(e)
+    }
+  }
+
+  const handleChange = (e) => {
+    setValue(e.target.value)
+    // Auto-resize textarea
+    const el = textareaRef.current
+    if (el) {
+      el.style.height = 'auto'
+      el.style.height = Math.min(el.scrollHeight, 140) + 'px'
+    }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="px-6 py-4 border-t border-white/10">
-      <div className="flex items-center gap-3 bg-gray-900 border border-white/10 rounded-2xl px-4 py-3 max-w-4xl mx-auto">
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          disabled={disabled}
-          placeholder="Posez votre question sur la riziculture..."
-          className="flex-1 bg-transparent text-white text-sm outline-none placeholder-gray-500 disabled:opacity-50"
-        />
-        <button
-          type="submit"
-          disabled={disabled || !value.trim()}
-          className="bg-cyan-400 text-gray-950 px-4 py-2 rounded-xl text-sm font-medium hover:bg-cyan-300 transition disabled:opacity-40 disabled:hover:bg-cyan-400"
-        >
-          {disabled ? '...' : 'Envoyer'}
-        </button>
-      </div>
-    </form>
+    <div className="chat-input-area">
+      <form onSubmit={handleSubmit}>
+        <div className="chat-input-wrapper">
+          <textarea
+            ref={textareaRef}
+            rows={1}
+            value={value}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            disabled={disabled}
+            placeholder="Posez votre question sur la riziculture..."
+            className="chat-textarea"
+          />
+          <button
+            type="submit"
+            disabled={disabled || !value.trim()}
+            className="chat-send-btn"
+            title="Envoyer (Entrée)"
+          >
+            {disabled ? (
+              <span style={{ fontSize: '0.8rem', animation: 'spin-slow 1s linear infinite', display: 'inline-block' }}>⟳</span>
+            ) : (
+              '↑'
+            )}
+          </button>
+        </div>
+        <p className="chat-hint">Entrée pour envoyer · Maj+Entrée pour un saut de ligne</p>
+      </form>
+    </div>
   )
 }
 

@@ -1,28 +1,43 @@
 const Hero = () => {
   return (
-    <section className="relative flex flex-col items-center justify-center text-center px-8 py-52 overflow-hidden">
-      
-      {/* Blob décoratif */}
-      <div className="absolute w-3xl h-96 bg-cyan-300 rounded-full blur-3xl opacity-30  left-1/2 -translate-x-1/2 " />
-      
-      <h1 className="relative text-5xl font-bold text-cyan-400 max-w-2xl leading-tight">
-        L'assistant agricole qui connaît vos rizières
+    <section className="hero">
+      {/* Background glows */}
+      <div className="hero-bg-glow glow-1" />
+      <div className="hero-bg-glow glow-2" />
+
+      {/* Badge */}
+      <div className="hero-badge animate-fade-in-up">
+        Assistant Rizicole Intelligent · Madagascar
+      </div>
+
+      {/* Title */}
+      <h1 className="hero-title animate-fade-in-up delay-100">
+        <span className="gradient-text">L'assistant agricole</span>
+        <br />
+        qui connaît vos rizières
       </h1>
-      
-      <p className="relative mt-4 text-gray-500 text-lg max-w-xl">
+
+      {/* Subtitle */}
+      <p className="hero-subtitle animate-fade-in-up delay-200">
         Posez vos questions, obtenez des réponses précises basées sur des 
         connaissances agricoles locales et expertes.
       </p>
 
-      <div className="relative mt-8 flex items-center gap-4">
-        <a href="/chat" className="bg-cyan-600 text-white px-6 py-3 rounded-full text-sm font-medium hover:bg-cyan-700 transition">
-          Commencer maintenant
+      {/* CTA Buttons */}
+      <div className="hero-cta animate-fade-in-up delay-300">
+        <a href="/chat" className="btn-primary" style={{ padding: '0.75rem 2rem', fontSize: '1rem' }}>
+          🌾 Commencer maintenant
         </a>
-        <a href="#features" className="text-sm text-gray-500 hover:text-cyan-600 transition">
-          En savoir plus →
+        <a href="#features" className="btn-secondary" style={{ padding: '0.75rem 1.5rem', fontSize: '1rem' }}>
+          En savoir plus ↓
         </a>
       </div>
 
+      {/* Scroll indicator */}
+      <div className="hero-scroll animate-fade-in delay-500">
+        <span>Découvrir</span>
+        <div className="hero-scroll-line" />
+      </div>
     </section>
   )
 }

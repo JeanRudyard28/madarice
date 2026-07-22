@@ -9,7 +9,7 @@ const Navbar = () => {
   return (
     <>
       <nav className="navbar">
-        <Link to="/" className="navbar-brand">Racine</Link>
+        <Link to="/" className="navbar-brand">Riziculture Solutions</Link>
 
         {/* Desktop links */}
         <div className="navbar-links" style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>

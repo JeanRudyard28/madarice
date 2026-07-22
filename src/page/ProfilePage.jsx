@@ -1,16 +1,55 @@
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { getConversations } from '../lib/storage'
+import { getBackendConversations, getBackendMessages } from '../lib/api'
 
 const ProfilePage = () => {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const conversations = getConversations()
+  const [convCount, setConvCount] = useState(0)
+  const [msgCount, setMsgCount] = useState(0)
+  const [loading, setLoading] = useState(false)
 
   const handleLogout = () => {
     logout()
     navigate('/')
   }
+
+  useEffect(() => {
+    const loadStats = async () => {
+      if (!user) return
+      setLoading(true)
+      
+      if (user.token) {
+        // Mode connecté : charger depuis le serveur
+        try {
+          const backendConvs = await getBackendConversations(user.token)
+          setConvCount(backendConvs.length)
+          
+          // Récupérer tous les messages en parallèle pour de meilleures performances
+          const messagesPromises = backendConvs.map(conv =>
+            getBackendMessages(conv.id, user.token).catch(() => [])
+          )
+          const allMessages = await Promise.all(messagesPromises)
+          const totalMessages = allMessages.reduce((sum, msgs) => sum + msgs.length, 0)
+          setMsgCount(totalMessages)
+        } catch (err) {
+          console.error("Erreur lors de la récupération des stats du profil:", err)
+        } finally {
+          setLoading(false)
+        }
+      } else {
+        // Mode invité : charger depuis le localStorage
+        const localConvs = getConversations()
+        setConvCount(localConvs.length)
+        const totalMessages = localConvs.reduce((acc, c) => acc + (c.messages?.length || 0), 0)
+        setMsgCount(totalMessages)
+        setLoading(false)
+      }
+    }
+    loadStats()
+  }, [user])
 
   if (!user) {
     return (
@@ -31,7 +70,6 @@ const ProfilePage = () => {
   }
 
   const initial = user.name?.charAt(0).toUpperCase() || '?'
-  const msgCount = conversations.reduce((acc, c) => acc + c.messages.length, 0)
 
   return (
     <div className="auth-page">
@@ -61,11 +99,15 @@ const ProfilePage = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
             <div className="stat-badge">
               <span style={{ fontSize: '0.8rem', color: 'var(--clr-muted)' }}>Conversations</span>
-              <span style={{ fontWeight: 700, color: 'var(--clr-cyan)', fontSize: '1.1rem' }}>{conversations.length}</span>
+              <span style={{ fontWeight: 700, color: 'var(--clr-cyan)', fontSize: '1.1rem' }}>
+                {loading ? "..." : convCount}
+              </span>
             </div>
             <div className="stat-badge">
               <span style={{ fontSize: '0.8rem', color: 'var(--clr-muted)' }}>Messages</span>
-              <span style={{ fontWeight: 700, color: 'var(--clr-cyan)', fontSize: '1.1rem' }}>{msgCount}</span>
+              <span style={{ fontWeight: 700, color: 'var(--clr-cyan)', fontSize: '1.1rem' }}>
+                {loading ? "..." : msgCount}
+              </span>
             </div>
           </div>
 

@@ -12,7 +12,7 @@ const RegisterPage = () => {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
 
@@ -20,13 +20,13 @@ const RegisterPage = () => {
       setError('Les mots de passe ne correspondent pas.')
       return
     }
-    if (password.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caractères.')
+    if (password.length < 8) {
+      setError('Le mot de passe doit contenir au moins 8 caractères.')
       return
     }
 
     try {
-      register({ name, email, password })
+      await register({ name, email, password })
       navigate('/chat')
     } catch (err) {
       setError(err.message)

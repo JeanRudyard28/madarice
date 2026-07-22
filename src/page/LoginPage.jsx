@@ -10,11 +10,11 @@ const LoginPage = () => {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     try {
-      login({ email, password })
+      await login({ email, password })
       navigate('/chat')
     } catch (err) {
       setError(err.message)

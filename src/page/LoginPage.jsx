@@ -28,7 +28,7 @@ const LoginPage = () => {
         {/* Header */}
         <div className="auth-header">
           <div>
-            <Link to="/" className="auth-logo">Racine</Link>
+            <Link to="/" className="auth-logo">Riziculture Solutions</Link>
           </div>
           <h1 className="auth-title">Bon retour 👋</h1>
           <p className="auth-subtitle">Connectez-vous pour accéder à votre historique</p>

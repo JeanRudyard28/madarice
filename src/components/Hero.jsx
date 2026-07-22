@@ -34,10 +34,10 @@ const Hero = () => {
       </div>
 
       {/* Scroll indicator */}
-      <div className="hero-scroll animate-fade-in delay-500">
+      {/* <div className="hero-scroll animate-fade-in delay-500">
         <span>Découvrir</span>
         <div className="hero-scroll-line" />
-      </div>
+      </div> */}
     </section>
   )
 }

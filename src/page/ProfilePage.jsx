@@ -55,7 +55,7 @@ const ProfilePage = () => {
     return (
       <div className="auth-page">
         <div className="auth-card animate-fade-in-up" style={{ textAlign: 'center' }}>
-          <Link to="/" className="auth-logo" style={{ justifyContent: 'center', display: 'flex', marginBottom: '1.5rem' }}>Racine</Link>
+          <Link to="/" className="auth-logo" style={{ justifyContent: 'center', display: 'flex', marginBottom: '1.5rem' }}>Riziculture Solutions</Link>
           <h1 className="auth-title">Vous n'êtes pas connecté</h1>
           <p className="auth-subtitle" style={{ marginBottom: '2rem', marginTop: '0.5rem' }}>
             Créez un compte pour accéder à votre profil et sauvegarder votre historique.
@@ -78,7 +78,7 @@ const ProfilePage = () => {
         {/* Header */}
         <div className="auth-header">
           <div>
-            <Link to="/" className="auth-logo">Racine</Link>
+            <Link to="/" className="auth-logo">Riziculture Solutions</Link>
           </div>
           <h1 className="auth-title">Mon profil</h1>
         </div>

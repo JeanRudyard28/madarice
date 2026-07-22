@@ -21,12 +21,6 @@ import {
   titleFromMessage,
 } from '../lib/storage'
 
-const defaultGreeting = {
-  id: 'default-greeting',
-  role: 'assistant',
-  content: "Bonjour ! Je suis Felana, votre assistant rizicole. Comment puis-je vous aider ?"
-}
-
 const ChatPage = () => {
   const { user } = useAuth()
   const [conversations, setConversations] = useState([])
@@ -35,7 +29,7 @@ const ChatPage = () => {
   const [errorMsg, setErrorMsg] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  // Charge l'historique au montage (ou changement d'utilisateur)
+  // Charge les métadonnées d'historique (titres/ids) sans charger les anciens messages dans ChatWindow
   useEffect(() => {
     const loadData = async () => {
       setErrorMsg('')
@@ -44,28 +38,26 @@ const ChatPage = () => {
         try {
           const backendConvs = await getBackendConversations(user.token)
           if (backendConvs.length > 0) {
-            // Charge les messages pour la première conversation
-            const firstConv = backendConvs[0]
-            const msgs = await getBackendMessages(firstConv.id, user.token)
-            firstConv.messages = msgs
-            setConversations(backendConvs)
-            setActiveId(firstConv.id)
+            // Conserve l'historique sans précharger les anciens messages dans ChatWindow
+            const convsWithoutLoadedMessages = backendConvs.map((c) => ({ ...c, messages: [] }))
+            setConversations(convsWithoutLoadedMessages)
+            setActiveId(convsWithoutLoadedMessages[0].id)
           } else {
-            // Crée une conversation initiale si aucune n'existe sur le serveur
             const newConv = await createBackendConversation("Nouvelle conversation", user.id, user.token)
             newConv.messages = []
             setConversations([newConv])
             setActiveId(newConv.id)
           }
         } catch (err) {
-          setErrorMsg("Impossible de charger les conversations depuis le serveur.")
+          setErrorMsg("Impossible de charger l'historique depuis le serveur.")
         } finally {
           setLoading(false)
         }
       } else {
-        // Flux invité
+        // Mode invité
         const initial = getOrCreateInitialConversation()
-        setConversations(getConversations())
+        const stored = getConversations().map((c) => ({ ...c, messages: [] }))
+        setConversations(stored.length > 0 ? stored : [{ ...initial, messages: [] }])
         setActiveId(initial.id)
       }
     }
@@ -76,6 +68,7 @@ const ChatPage = () => {
 
   const handleNewConversation = async () => {
     setErrorMsg('')
+    setSidebarOpen(false)
     if (user && user.token) {
       setLoading(true)
       try {
@@ -90,30 +83,15 @@ const ChatPage = () => {
       }
     } else {
       const conv = createConversation()
-      setConversations(getConversations())
+      setConversations(getConversations().map((c) => (c.id === conv.id ? { ...c, messages: [] } : c)))
       setActiveId(conv.id)
     }
   }
 
-  const handleSelectConversation = async (id) => {
+  const handleSelectConversation = (id) => {
     setActiveId(id)
     setErrorMsg('')
     setSidebarOpen(false)
-
-    // Charger les messages à la sélection si en mode connecté
-    if (user && user.token) {
-      setLoading(true)
-      try {
-        const msgs = await getBackendMessages(id, user.token)
-        setConversations((prev) =>
-          prev.map((c) => (c.id === id ? { ...c, messages: msgs } : c))
-        )
-      } catch (err) {
-        setErrorMsg("Impossible de récupérer les messages de la conversation.")
-      } finally {
-        setLoading(false)
-      }
-    }
   }
 
   const handleDeleteConversation = async (id) => {
@@ -131,10 +109,7 @@ const ChatPage = () => {
         } else {
           setConversations(remaining)
           if (activeId === id) {
-            const nextActive = remaining[0]
-            const msgs = await getBackendMessages(nextActive.id, user.token)
-            nextActive.messages = msgs
-            setActiveId(nextActive.id)
+            setActiveId(remaining[0].id)
           }
         }
       } catch (err) {
@@ -146,10 +121,10 @@ const ChatPage = () => {
       const remaining = deleteConversation(id)
       if (remaining.length === 0) {
         const conv = createConversation()
-        setConversations(getConversations())
+        setConversations([{ ...conv, messages: [] }])
         setActiveId(conv.id)
       } else {
-        setConversations(remaining)
+        setConversations(remaining.map((c) => ({ ...c, messages: [] })))
         if (activeId === id) setActiveId(remaining[0].id)
       }
     }
@@ -165,18 +140,15 @@ const ChatPage = () => {
 
       setLoading(true)
       try {
-        // 1. Sauvegarder le message de l'utilisateur dans le backend
         const userMsg = await createBackendMessage(activeConversation.id, text, 'user', user.token)
         const updatedMessages = [...currentMessages, userMsg]
 
         let updatedTitle = activeConversation.title
         if (isFirstUserMessage) {
           updatedTitle = titleFromMessage(text)
-          // Mettre à jour le titre sur le backend
           await updateBackendConversation(activeConversation.id, updatedTitle, user.token)
         }
 
-        // Mettre à jour l'UI locale immédiatement avec le message utilisateur
         setConversations((prev) =>
           prev.map((c) =>
             c.id === activeConversation.id
@@ -185,13 +157,9 @@ const ChatPage = () => {
           )
         )
 
-        // 2. Envoyer le message à n8n (on passe l'id backend comme sessionId pour l'historique de n8n)
         const { output } = await sendChatMessage(text, activeConversation.id)
-
-        // 3. Sauvegarder le message de l'assistant dans le backend
         const assistantMsg = await createBackendMessage(activeConversation.id, output, 'assistant', user.token)
 
-        // Mettre à jour l'UI avec la réponse
         setConversations((prev) =>
           prev.map((c) =>
             c.id === activeConversation.id
@@ -207,48 +175,50 @@ const ChatPage = () => {
     } else {
       // Mode invité local
       const userMessage = { id: crypto.randomUUID(), role: 'user', content: text }
-      const isFirstUserMessage = !activeConversation.messages.some((m) => m.role === 'user')
+      const currentMessages = activeConversation.messages || []
+      const isFirstUserMessage = !currentMessages.some((m) => m.role === 'user')
 
-      const updatedMessages = [...activeConversation.messages, userMessage]
+      const updatedMessages = [...currentMessages, userMessage]
       const updated = updateConversation(activeConversation.id, {
         messages: updatedMessages,
         title: isFirstUserMessage ? titleFromMessage(text) : activeConversation.title,
       })
-      setConversations(getConversations())
+      setConversations((prev) =>
+        prev.map((c) => (c.id === activeConversation.id ? { ...c, messages: updatedMessages } : c))
+      )
       setLoading(true)
 
       try {
-        const { output } = await sendChatMessage(text, activeConversation.sessionId)
+        const { output } = await sendChatMessage(text, activeConversation.sessionId || activeConversation.id)
         const assistantMessage = { id: crypto.randomUUID(), role: 'assistant', content: output }
+        const finalMessages = [...updatedMessages, assistantMessage]
         updateConversation(activeConversation.id, {
-          messages: [...updated.messages, assistantMessage],
+          messages: finalMessages,
         })
-        setConversations(getConversations())
+        setConversations((prev) =>
+          prev.map((c) => (c.id === activeConversation.id ? { ...c, messages: finalMessages } : c))
+        )
       } catch (err) {
-        setErrorMsg("Impossible de contacter Racine pour le moment. Vérifiez la connexion au workflow n8n.")
+        setErrorMsg("Impossible de contacter Riziculture Solutions pour le moment. Vérifiez la connexion au workflow n8n.")
       } finally {
         setLoading(false)
       }
     }
   }
 
-  // Prepend le message de bienvenue par défaut s'il n'y a pas de messages
-  const messagesToDisplay = activeConversation
-    ? (activeConversation.messages && activeConversation.messages.length > 0
-        ? activeConversation.messages
-        : [defaultGreeting])
-    : []
+  // Ne pas précharger de messages stockés par défaut :
+  // Si aucun message n'a été envoyé dans la session active, messagesToDisplay reste []
+  const messagesToDisplay = activeConversation?.messages || []
 
   return (
     <div className="chat-page">
-      {/* Overlay mobile sidebar */}
-      {sidebarOpen && (
-        <div
-          className="sidebar-overlay visible"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+      {/* Drawer backdrop overlay */}
+      <div
+        className={`sidebar-overlay${sidebarOpen ? ' visible' : ''}`}
+        onClick={() => setSidebarOpen(false)}
+      />
 
+      {/* Drawer panel d'historique */}
       <Sidebar
         conversations={conversations}
         activeId={activeId}
@@ -260,17 +230,24 @@ const ChatPage = () => {
       />
 
       <div className="chat-area">
-        {/* Mobile topbar */}
+        {/* Topbar avec bouton toggle de l'historique en Drawer */}
         <div className="chat-topbar">
           <button
             className="menu-toggle"
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            aria-label="Menu"
+            aria-label="Ouvrir l'historique"
+            title="Historique des conversations"
           >
-            ☰
+            📜 <span className="menu-toggle-text">Historique</span>
           </button>
-          <span className="chat-topbar-title">🌾 Racine</span>
-          <div style={{ width: 40 }} />
+          <span className="chat-topbar-title">🌾 Riziculture Solutions</span>
+          <button
+            className="btn-new-chat-topbar"
+            onClick={handleNewConversation}
+            title="Nouvelle conversation"
+          >
+            ＋ <span className="btn-new-chat-text">Nouveau</span>
+          </button>
         </div>
 
         <ChatWindow

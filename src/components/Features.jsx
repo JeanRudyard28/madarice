@@ -22,12 +22,12 @@ const features = [
   {
     icon: "🕐",
     title: "Disponible à tout moment",
-    description: "Racine est disponible 24h/24, 7j/7 pour répondre à vos questions."
+    description: "Riziculture Solutions est disponible 24h/24, 7j/7 pour répondre à vos questions."
   },
   {
     icon: "🎯",
     title: "Réponses précises et fiables",
-    description: "Aucune information inventée — si la réponse n'est pas dans la base, Racine le dit."
+    description: "Aucune information inventée — si la réponse n'est pas dans la base, Riziculture Solutions le dit."
   }
 ]
 

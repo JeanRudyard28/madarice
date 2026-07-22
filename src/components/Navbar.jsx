@@ -12,7 +12,7 @@ const Navbar = () => {
         <Link to="/" className="navbar-brand">Riziculture Solutions</Link>
 
         {/* Desktop links */}
-        <div className="navbar-links" style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+        <div className="navbar-links">
           <a href="#features" className="nav-link">Fonctionnalités</a>
           {user ? (
             <Link to="/profile" className="nav-link">{user.name}</Link>

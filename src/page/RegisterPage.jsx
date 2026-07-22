@@ -40,7 +40,7 @@ const RegisterPage = () => {
         {/* Header */}
         <div className="auth-header">
           <div>
-            <Link to="/" className="auth-logo">Racine</Link>
+            <Link to="/" className="auth-logo">Riziculture Solutions</Link>
           </div>
           <h1 className="auth-title">Créer un compte</h1>
           <p className="auth-subtitle">Sauvegardez votre historique de conversations</p>

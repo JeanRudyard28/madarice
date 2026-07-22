@@ -16,25 +16,15 @@ const Sidebar = ({ conversations = [], activeId, onSelect, onNew, onDelete, isOp
     <aside className={`sidebar${isOpen ? ' sidebar-open' : ''}`}>
       {/* Header */}
       <div className="sidebar-header">
-        <Link to="/" className="sidebar-brand">🌾 Racine</Link>
-        {/* Close button on mobile */}
-        {isOpen && (
-          <button
-            onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--clr-muted)',
-              cursor: 'pointer',
-              fontSize: '1.25rem',
-              padding: '0.25rem',
-              display: 'none',
-            }}
-            className="sidebar-close-btn"
-          >
-            ✕
-          </button>
-        )}
+        <Link to="/" className="sidebar-brand">🌾 Riziculture Solutions</Link>
+        {/* Close button for drawer */}
+        <button
+          onClick={onClose}
+          className="sidebar-close-btn"
+          aria-label="Fermer le tiroir"
+        >
+          ✕
+        </button>
       </div>
 
       {/* New conversation button */}

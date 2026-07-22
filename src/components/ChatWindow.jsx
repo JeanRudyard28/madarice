@@ -60,7 +60,7 @@ const ChatWindow = ({ messages = [], loading = false }) => {
       <div className="chat-window" style={{ justifyContent: 'center', alignItems: 'center' }}>
         <div className="chat-empty">
           <div className="chat-empty-icon">🌾</div>
-          <div className="chat-empty-title">Bonjour ! Je suis Racine</div>
+          <div className="chat-empty-title">Bonjour ! Je suis Riziculture Solutions</div>
           <div className="chat-empty-subtitle">
             Posez-moi vos questions sur la riziculture à Madagascar
           </div>

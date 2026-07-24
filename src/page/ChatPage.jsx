@@ -29,7 +29,7 @@ const ChatPage = () => {
   const [errorMsg, setErrorMsg] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  // Charge les métadonnées d'historique (titres/ids) sans charger les anciens messages dans ChatWindow
+  // Charge la liste des conversations au démarrage sans en sélectionner une par défaut
   useEffect(() => {
     const loadData = async () => {
       setErrorMsg('')
@@ -37,55 +37,48 @@ const ChatPage = () => {
         setLoading(true)
         try {
           const backendConvs = await getBackendConversations(user.token)
-          if (backendConvs.length > 0) {
-            // Conserve l'historique sans précharger les anciens messages dans ChatWindow
-            const convsWithoutLoadedMessages = backendConvs.map((c) => ({ ...c, messages: [] }))
-            setConversations(convsWithoutLoadedMessages)
-            setActiveId(convsWithoutLoadedMessages[0].id)
-          } else {
-            const newConv = await createBackendConversation("Nouvelle conversation", user.id, user.token)
-            newConv.messages = []
-            setConversations([newConv])
-            setActiveId(newConv.id)
-          }
+          setConversations(backendConvs)
         } catch (err) {
           setErrorMsg("Impossible de charger l'historique depuis le serveur.")
         } finally {
           setLoading(false)
         }
       } else {
-        // Mode invité
-        const initial = getOrCreateInitialConversation()
-        const stored = getConversations().map((c) => ({ ...c, messages: [] }))
-        setConversations(stored.length > 0 ? stored : [{ ...initial, messages: [] }])
-        setActiveId(initial.id)
+        // Mode invité (localStorage)
+        const stored = getConversations()
+        setConversations(stored)
       }
     }
     loadData()
   }, [user])
 
-  const activeConversation = conversations.find((c) => c.id === activeId) || null
+  // Charge les messages de la conversation active pour les utilisateurs connectés
+  useEffect(() => {
+    if (!activeId || !user || !user.token) return
 
-  const handleNewConversation = async () => {
-    setErrorMsg('')
-    setSidebarOpen(false)
-    if (user && user.token) {
+    const loadMessages = async () => {
       setLoading(true)
       try {
-        const newConv = await createBackendConversation("Nouvelle conversation", user.id, user.token)
-        newConv.messages = []
-        setConversations((prev) => [newConv, ...prev])
-        setActiveId(newConv.id)
+        const msgs = await getBackendMessages(activeId, user.token)
+        setConversations((prev) =>
+          prev.map((c) => (c.id === activeId ? { ...c, messages: msgs } : c))
+        )
       } catch (err) {
-        setErrorMsg("Impossible de créer une nouvelle conversation sur le serveur.")
+        setErrorMsg("Impossible de charger les messages de cette conversation.")
       } finally {
         setLoading(false)
       }
-    } else {
-      const conv = createConversation()
-      setConversations(getConversations().map((c) => (c.id === conv.id ? { ...c, messages: [] } : c)))
-      setActiveId(conv.id)
     }
+
+    loadMessages()
+  }, [activeId, user])
+
+  const activeConversation = conversations.find((c) => c.id === activeId) || null
+
+  const handleNewConversation = () => {
+    setErrorMsg('')
+    setSidebarOpen(false)
+    setActiveId(null)
   }
 
   const handleSelectConversation = (id) => {
@@ -101,16 +94,9 @@ const ChatPage = () => {
       try {
         await deleteBackendConversation(id, user.token)
         const remaining = conversations.filter((c) => c.id !== id)
-        if (remaining.length === 0) {
-          const newConv = await createBackendConversation("Nouvelle conversation", user.id, user.token)
-          newConv.messages = []
-          setConversations([newConv])
-          setActiveId(newConv.id)
-        } else {
-          setConversations(remaining)
-          if (activeId === id) {
-            setActiveId(remaining[0].id)
-          }
+        setConversations(remaining)
+        if (activeId === id) {
+          setActiveId(null)
         }
       } catch (err) {
         setErrorMsg("Impossible de supprimer la conversation sur le serveur.")
@@ -119,50 +105,54 @@ const ChatPage = () => {
       }
     } else {
       const remaining = deleteConversation(id)
-      if (remaining.length === 0) {
-        const conv = createConversation()
-        setConversations([{ ...conv, messages: [] }])
-        setActiveId(conv.id)
-      } else {
-        setConversations(remaining.map((c) => ({ ...c, messages: [] })))
-        if (activeId === id) setActiveId(remaining[0].id)
+      setConversations(remaining)
+      if (activeId === id) {
+        setActiveId(null)
       }
     }
   }
 
   const handleSend = async (text) => {
-    if (!activeConversation || !text.trim()) return
+    if (!text.trim()) return
     setErrorMsg('')
 
     if (user && user.token) {
-      const currentMessages = activeConversation.messages || []
-      const isFirstUserMessage = !currentMessages.some((m) => m.role === 'user')
-
       setLoading(true)
       try {
-        const userMsg = await createBackendMessage(activeConversation.id, text, 'user', user.token)
+        let currentConv = activeConversation
+        if (!currentConv) {
+          currentConv = await createBackendConversation("Nouvelle conversation", user.id, user.token)
+          currentConv.messages = []
+          setConversations((prev) => [currentConv, ...prev])
+          setActiveId(currentConv.id)
+        }
+
+        const currentMessages = currentConv.messages || []
+        const isFirstUserMessage = !currentMessages.some((m) => m.role === 'user')
+
+        const userMsg = await createBackendMessage(currentConv.id, text, 'user', user.token)
         const updatedMessages = [...currentMessages, userMsg]
 
-        let updatedTitle = activeConversation.title
+        let updatedTitle = currentConv.title
         if (isFirstUserMessage) {
           updatedTitle = titleFromMessage(text)
-          await updateBackendConversation(activeConversation.id, updatedTitle, user.token)
+          await updateBackendConversation(currentConv.id, updatedTitle, user.token)
         }
 
         setConversations((prev) =>
           prev.map((c) =>
-            c.id === activeConversation.id
+            c.id === currentConv.id
               ? { ...c, title: updatedTitle, messages: updatedMessages }
               : c
           )
         )
 
-        const { output } = await sendChatMessage(text, activeConversation.id)
-        const assistantMsg = await createBackendMessage(activeConversation.id, output, 'assistant', user.token)
+        const { output } = await sendChatMessage(text, currentConv.id)
+        const assistantMsg = await createBackendMessage(currentConv.id, output, 'assistant', user.token)
 
         setConversations((prev) =>
           prev.map((c) =>
-            c.id === activeConversation.id
+            c.id === currentConv.id
               ? { ...c, messages: [...updatedMessages, assistantMsg] }
               : c
           )
@@ -174,29 +164,36 @@ const ChatPage = () => {
       }
     } else {
       // Mode invité local
+      let currentConv = activeConversation
+      if (!currentConv) {
+        currentConv = createConversation()
+        setConversations(getConversations())
+        setActiveId(currentConv.id)
+      }
+
       const userMessage = { id: crypto.randomUUID(), role: 'user', content: text }
-      const currentMessages = activeConversation.messages || []
+      const currentMessages = currentConv.messages || []
       const isFirstUserMessage = !currentMessages.some((m) => m.role === 'user')
 
       const updatedMessages = [...currentMessages, userMessage]
-      const updated = updateConversation(activeConversation.id, {
+      const updated = updateConversation(currentConv.id, {
         messages: updatedMessages,
-        title: isFirstUserMessage ? titleFromMessage(text) : activeConversation.title,
+        title: isFirstUserMessage ? titleFromMessage(text) : currentConv.title,
       })
       setConversations((prev) =>
-        prev.map((c) => (c.id === activeConversation.id ? { ...c, messages: updatedMessages } : c))
+        prev.map((c) => (c.id === currentConv.id ? { ...c, title: updated ? updated.title : c.title, messages: updatedMessages } : c))
       )
       setLoading(true)
 
       try {
-        const { output } = await sendChatMessage(text, activeConversation.sessionId || activeConversation.id)
+        const { output } = await sendChatMessage(text, currentConv.id)
         const assistantMessage = { id: crypto.randomUUID(), role: 'assistant', content: output }
         const finalMessages = [...updatedMessages, assistantMessage]
-        updateConversation(activeConversation.id, {
+        updateConversation(currentConv.id, {
           messages: finalMessages,
         })
         setConversations((prev) =>
-          prev.map((c) => (c.id === activeConversation.id ? { ...c, messages: finalMessages } : c))
+          prev.map((c) => (c.id === currentConv.id ? { ...c, messages: finalMessages } : c))
         )
       } catch (err) {
         setErrorMsg("Impossible de contacter Riziculture Solutions pour le moment. Vérifiez la connexion au workflow n8n.")
@@ -206,8 +203,6 @@ const ChatPage = () => {
     }
   }
 
-  // Ne pas précharger de messages stockés par défaut :
-  // Si aucun message n'a été envoyé dans la session active, messagesToDisplay reste []
   const messagesToDisplay = activeConversation?.messages || []
 
   return (

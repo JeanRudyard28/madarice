@@ -1,4 +1,4 @@
-// NOTE: le workflow n8n fourni n'expose qu'un webhook de chat ("felana-chat"),
+// NOTE: le workflow n8n fourni n'expose qu'un webhook de chat ("Riziculture Solutions-chat"),
 // il n'y a pas encore de backend d'authentification ni de persistance des
 // conversations côté serveur. En attendant un vrai backend (Supabase, API
 // custom, etc.), l'inscription/connexion et l'historique sont gérés ici via
@@ -60,6 +60,18 @@ export function logoutUser() {
 
 // ---------- Historique des conversations ----------
 
+<<<<<<< HEAD
+=======
+function defaultGreeting() {
+  return {
+    id: crypto.randomUUID(),
+    role: "assistant",
+    content:
+      "Bonjour ! Je suis Riziculture Solutions, votre assistant rizicole. Comment puis-je vous aider ?",
+  }
+}
+
+>>>>>>> cd0bf0d12c3b693983b5b1685be1002867185c86
 export function getConversations() {
   const raw = localStorage.getItem(CONVERSATIONS_KEY)
   return raw ? JSON.parse(raw) : []

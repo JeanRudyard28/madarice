@@ -60,15 +60,6 @@ export function logoutUser() {
 
 // ---------- Historique des conversations ----------
 
-function defaultGreeting() {
-  return {
-    id: crypto.randomUUID(),
-    role: "assistant",
-    content:
-      "Bonjour ! Je suis Felana, votre assistant rizicole. Comment puis-je vous aider ?",
-  }
-}
-
 export function getConversations() {
   const raw = localStorage.getItem(CONVERSATIONS_KEY)
   return raw ? JSON.parse(raw) : []
@@ -85,7 +76,7 @@ export function createConversation() {
     sessionId: crypto.randomUUID(),
     title: "Nouvelle conversation",
     date: new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }),
-    messages: [defaultGreeting()],
+    messages: [],
   }
   conversations.unshift(newConv)
   saveConversations(conversations)

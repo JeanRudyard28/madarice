@@ -1,4 +1,4 @@
-// NOTE: le workflow n8n fourni n'expose qu'un webhook de chat ("felana-chat"),
+// NOTE: le workflow n8n fourni n'expose qu'un webhook de chat ("Riziculture Solutions-chat"),
 // il n'y a pas encore de backend d'authentification ni de persistance des
 // conversations côté serveur. En attendant un vrai backend (Supabase, API
 // custom, etc.), l'inscription/connexion et l'historique sont gérés ici via
@@ -65,7 +65,7 @@ function defaultGreeting() {
     id: crypto.randomUUID(),
     role: "assistant",
     content:
-      "Bonjour ! Je suis Felana, votre assistant rizicole. Comment puis-je vous aider ?",
+      "Bonjour ! Je suis Riziculture Solutions, votre assistant rizicole. Comment puis-je vous aider ?",
   }
 }
 

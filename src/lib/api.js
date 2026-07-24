@@ -7,7 +7,7 @@ const API_BASE_URL =
   "http://localhost:3000"
 
 /**
- * Envoie un message à l'agent Felana via le webhook n8n.
+ * Envoie un message à l'agent Riziculture Solutions via le webhook n8n.
  * @param {string} chatInput - le message de l'utilisateur
  * @param {string} sessionId - identifiant de session (mémoire de conversation côté n8n)
  * @returns {Promise<{ output: string, sessionId: string }>}
